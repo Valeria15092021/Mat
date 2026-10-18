@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="uk" class="h-full w-full overflow-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Весела Математика на Планшеті: Склад числа 8</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts: Fredoka -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Tablet & Touch Strict Guardrails */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            position: fixed;
+            font-family: 'Fredoka', cursive, sans-serif;
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 50%, #e0c3fc 100%);
+        }
+
+        /* Animated Floating Bubbles in Background */
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            animation: floatUp 12s infinite linear;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) scale(0.8); opacity: 0; }
+            20% { opacity: 0.6; }
+            100% { transform: translateY(-20vh) scale(1.2); opacity: 0; }
+        }
+
+        /* Large Touch Target Active Effects */
+        .tablet-btn {
+            min-height: 64px;
+            min-width: 64px;
+            transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, filter 0.08s ease-out;
+            cursor: pointer;
+        }
+
+        .tablet-btn:active {
+            transform: scale(0.92) translateY(4px) !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+            filter: brightness(0.95);
+        }
+
+        .bounce-gentle {
+            animation: bounceGentle 2.5s infinite ease-in-out;
+        }
+
+        @keyframes bounceGentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* Shake animation for wrong touch */
+        .shake-error {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        /* Grid slot animation */
+        .slot-pop {
+            animation: slotPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes slotPop {
+            0% { transform: scale(0.3); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-full w-full justify-between p-3 sm:p-5 select-none relative">
+
+    <!-- FLOATING BACKGROUND BUBBLES -->
+    <div id="bubblesContainer" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
+
+    <!-- ================= TOP BAR (TABLET HEADER) ================= -->
+    <header class="relative z-10 w-full max-w-5xl mx-auto flex items-center justify-between bg-white/85 backdrop-blur-md p-3 sm:p-4 rounded-3xl shadow-xl border-4 border-yellow-300">
+        <button id="homeBtn" onclick="showMenu()" class="tablet-btn hidden bg-gradient-to-r from-pink-500 to-rose-500 active:from-pink-600 active:to-rose-600 text-white font-bold py-2 px-5 rounded-2xl shadow-md flex items-center gap-2 text-xl sm:text-2xl border-b-4 border-rose-700">
+            <i class="fa-solid fa-house"></i>
+            <span class="hidden sm:inline">Меню</span>
+        </button>
+
+        <div class="flex items-center gap-3 mx-auto sm:mx-0">
+            <span class="text-3xl sm:text-5xl bounce-gentle">🎈</span>
+            <div>
+                <h1 id="appTitle" class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-indigo-700 tracking-wide">Склад числа 8</h1>
+                <p id="appSubtitle" class="text-xs sm:text-sm font-semibold text-indigo-400 hidden sm:block">Планшетна розвиваюча гра для дітей</p>
+            </div>
+        </div>
+
+        <!-- REWARD BADGE -->
+        <div class="flex items-center bg-amber-100 border-3 border-amber-400 px-4 py-2 rounded-2xl shadow-inner gap-2 sm:gap-3">
+            <i class="fa-solid fa-star text-amber-500 text-3xl sm:text-4xl animate-spin" style="animation-duration: 10s;"></i>
+            <span id="totalStars" class="text-2xl sm:text-4xl font-extrabold text-amber-800">0</span>
+        </div>
+    </header>
+
+    <!-- ================= MAIN CONTAINER ================= -->
+    <main class="relative z-10 w-full max-w-5xl mx-auto flex-grow flex items-center justify-center my-2 sm:my-4 overflow-hidden">
+
+        <!-- ================= 0. MAIN MENU ================= -->
+        <div id="mainMenu" class="w-full h-full flex flex-col justify-center items-center gap-4 sm:gap-6 p-2">
+            
+            <div class="text-center mb-2">
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-indigo-900">Обери гру та починай розвагу! ✨</h2>
+            </div>
+
+            <!-- LEVEL CARDS GRID -->
+            <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                
+                <!-- Card 1 -->
+                <div onclick="startGame(1)" class="tablet-btn bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-3xl p-5 sm:p-6 text-white shadow-2xl flex flex-col items-center text-center border-4 border-white/70 relative overflow-hidden group">
+                    <div class="bg-white/20 p-4 rounded-full mb-3 sm:mb-4 text-5xl sm:text-6xl bounce-gentle">
+                        🔢
+                    </div>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold mb-1">Група 1</h3>
+                    <p class="text-purple-100 text-base sm:text-lg font-medium mb-4">Приклади з цифрами (+ та -)</p>
+                    <div class="mt-auto w-full bg-white text-indigo-700 font-extrabold py-3 rounded-2xl shadow-lg text-xl sm:text-2xl">
+                        Грати 🚀
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div onclick="startGame(2)" class="tablet-btn bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-3xl p-5 sm:p-6 text-white shadow-2xl flex flex-col items-center text-center border-4 border-white/70 relative overflow-hidden group">
+                    <div class="bg-white/20 p-4 rounded-full mb-3 sm:mb-4 text-5xl sm:text-6xl bounce-gentle" style="animation-delay: 0.3s;">
+                        ⭐
+                    </div>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold mb-1">Група 2</h3>
+                    <p class="text-amber-100 text-base sm:text-lg font-medium mb-4">Додаємо фігурки до 8</p>
+                    <div class="mt-auto w-full bg-white text-orange-600 font-extrabold py-3 rounded-2xl shadow-lg text-xl sm:text-2xl">
+                        Грати 🚀
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div onclick="startGame(3)" class="tablet-btn bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 rounded-3xl p-5 sm:p-6 text-white shadow-2xl flex flex-col items-center text-center border-4 border-white/70 relative overflow-hidden group">
+                    <div class="bg-white/20 p-4 rounded-full mb-3 sm:mb-4 text-5xl sm:text-6xl bounce-gentle" style="animation-delay: 0.6s;">
+                        🎨
+                    </div>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold mb-1">Група 3</h3>
+                    <p class="text-emerald-100 text-base sm:text-lg font-medium mb-4">Вчимо 8 кольорів</p>
+                    <div class="mt-auto w-full bg-white text-teal-700 font-extrabold py-3 rounded-2xl shadow-lg text-xl sm:text-2xl">
+                        Грати 🚀
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================= 1. GAME 1: MATH NUMBERS ================= -->
+        <div id="game1" class="hidden w-full h-full bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-8 shadow-2xl border-4 border-indigo-300 flex flex-col justify-between items-center">
+            
+            <!-- Progress Bar -->
+            <div class="w-full flex items-center justify-between border-b-2 border-indigo-100 pb-3">
+                <span class="text-lg sm:text-xl font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-200">Рівень 1: Приклади</span>
+                <div id="g1Progress" class="flex gap-2 text-2xl sm:text-3xl text-amber-400"></div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="w-full max-w-2xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 text-white my-auto p-6 sm:p-10 rounded-3xl shadow-xl text-center border-4 border-white/80">
+                <div id="mathEquation" class="text-5xl sm:text-7xl md:text-8xl font-black tracking-widest drop-shadow-md">
+                    5 + ? = 8
+                </div>
+            </div>
+
+            <p class="text-indigo-900 font-bold text-xl sm:text-2xl mb-3">Обери правильне число:</p>
+
+            <!-- Large Touch Keypad (Grid of 4 big buttons) -->
+            <div id="g1Options" class="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-3xl">
+                <!-- Dynamically generated tablet buttons -->
+            </div>
+        </div>
+
+        <!-- ================= 2. GAME 2: SHAPE COMPOSITION ================= -->
+        <div id="game2" class="hidden w-full h-full bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-8 shadow-2xl border-4 border-amber-300 flex flex-col justify-between items-center">
+            
+            <div class="w-full flex items-center justify-between border-b-2 border-amber-100 pb-2">
+                <span class="text-lg sm:text-xl font-bold text-amber-700 bg-amber-50 px-4 py-2 rounded-xl border border-amber-200">Рівень 2: Збери 8 фігурок</span>
+                <div id="g2Progress" class="flex gap-2 text-2xl sm:text-3xl text-amber-400"></div>
+            </div>
+
+            <!-- Instruction -->
+            <h3 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-800 text-center my-1">
+                Додай ще фігурок, щоб разом було рівно <span class="text-amber-500 text-4xl font-black">8</span>!
+            </h3>
+
+            <!-- Visual Tray Frame (2 rows of 4 cells = 8 slots) -->
+            <div class="w-full max-w-3xl bg-amber-50 rounded-3xl p-4 sm:p-6 border-4 border-dashed border-amber-300 shadow-inner my-auto">
+                <div id="shapeGrid" class="grid grid-cols-4 gap-3 sm:gap-4 min-h-[140px] sm:min-h-[180px] items-center justify-items-center">
+                    <!-- 8 Slots filled dynamically -->
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <span class="inline-block bg-amber-200/80 text-amber-900 font-extrabold px-6 py-2 rounded-full text-xl sm:text-2xl">
+                        На дошці: <span id="g2CountText" class="text-3xl text-orange-600 font-black">0</span> / 8
+                    </span>
+                </div>
+            </div>
+
+            <p class="text-slate-700 font-bold text-lg sm:text-xl mb-2">Натисни, скільки ще фігурок треба додати:</p>
+
+            <!-- Touch Options -->
+            <div id="g2Options" class="flex flex-wrap justify-center gap-3 sm:gap-6 w-full max-w-2xl">
+                <!-- Option Buttons -->
+            </div>
+        </div>
+
+        <!-- ================= 3. GAME 3: LEARN 8 COLORS ================= -->
+        <div id="game3" class="hidden w-full h-full bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-8 shadow-2xl border-4 border-teal-300 flex flex-col justify-between items-center">
+            
+            <div class="w-full flex items-center justify-between border-b-2 border-teal-100 pb-2">
+                <div class="flex gap-2">
+                    <button id="modeColorFind" onclick="setGame3Mode('find')" class="px-4 py-2 rounded-xl font-extrabold text-lg bg-teal-600 text-white shadow">
+                        🔍 Знайди колір
+                    </button>
+                    <button id="modeColorPaint" onclick="setGame3Mode('paint')" class="px-4 py-2 rounded-xl font-extrabold text-lg bg-teal-100 text-teal-800">
+                        🖌️ Розфарбуй!
+                    </button>
+                </div>
+                <div id="g3Progress" class="flex gap-2 text-2xl sm:text-3xl text-amber-400"></div>
+            </div>
+
+            <!-- MODE 3A: FIND COLOR -->
+            <div id="g3FindContainer" class="w-full h-full flex flex-col justify-between items-center my-auto">
+                <div class="text-center my-2">
+                    <p class="text-lg sm:text-2xl font-bold text-slate-700">Натисни всі фігури кольору:</p>
+                    <div id="g3TargetColorBadge" class="inline-block my-2 px-8 py-3 rounded-3xl text-white text-3xl sm:text-4xl font-extrabold shadow-lg transform hover:scale-105 transition-transform border-4 border-white">
+                        Червоний
+                    </div>
+                </div>
+
+                <!-- 8 Color items grid -->
+                <div id="g3ColorGrid" class="grid grid-cols-4 gap-3 sm:gap-6 bg-teal-50/80 p-4 sm:p-6 rounded-3xl border-3 border-teal-200 my-auto w-full max-w-xl justify-items-center">
+                    <!-- 8 interactive shapes -->
+                </div>
+            </div>
+
+            <!-- MODE 3B: PAINT STUDIO -->
+            <div id="g3PaintContainer" class="hidden w-full h-full flex flex-col justify-between items-center my-auto">
+                <p id="paintPromptText" class="text-xl sm:text-2xl font-extrabold text-teal-800 text-center my-1">
+                    Обери колір та розфарбуй фігурку!
+                </p>
+
+                <!-- Target Unpainted Shape -->
+                <div id="paintCanvasShape" class="my-auto p-8 rounded-3xl bg-teal-50 border-4 border-dashed border-teal-300 text-9xl sm:text-[11rem] flex items-center justify-center transition-all duration-300 shadow-inner">
+                    <i id="paintShapeIcon" class="fa-solid fa-star text-slate-300"></i>
+                </div>
+
+                <!-- Palette of 8 Colors -->
+                <div class="w-full max-w-2xl mb-2">
+                    <p class="text-center text-slate-600 font-bold mb-2">Палітра з 8 яскравих кольорів:</p>
+                    <div id="colorPalette" class="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-3 justify-items-center">
+                        <!-- 8 Palette swatches -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="g3Feedback" class="h-8 text-xl sm:text-2xl font-extrabold text-emerald-600 text-center"></div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="relative z-10 text-center text-slate-600 font-bold text-xs sm:text-sm">
+        📱 Оптимізовано для планшетів (iPad / Android) з підтримкою сенсорного екрана
+    </footer>
+
+    <!-- AUDIO ENGINE (Web Audio API) -->
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Global touch audio unlocker for iOS/Android
+        window.addEventListener('touchstart', initAudio, { once: true });
+        window.addEventListener('click', initAudio, { once: true });
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            
+            if (type === 'correct') {
+                // Pleasant chime arpeggio
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                    
+                    gain.gain.setValueAtTime(0.25, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+                    
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.35);
+                });
+            } else if (type === 'wrong') {
+                // Gentle low buzz
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(130, now + 0.25);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'pop') {
+                // Short bubbly pop sound
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(350, now);
+                osc.frequency.exponentialRampToValueAtTime(850, now + 0.06);
+                
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+                
+                osc.start(now);
+                osc.stop(now + 0.06);
+            } else if (type === 'win') {
+                // Fanfare
+                const notes = [440, 554.37, 659.25, 880, 1108.73];
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.5);
+                    
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.5);
+                });
+            }
+        }
+    </script>
+
+    <!-- MAIN GAME ENGINE -->
+    <script>
+        // Global Game State
+        let totalStars = 0;
+        let currentGame = 0;
+        let currentStep = 0;
+        const totalSteps = 5;
+
+        // 8 Bright Colors Palette for Group 3
+        const EIGHT_COLORS = [
+            { id: 'red', name: 'Червоний', hex: '#ef4444', border: '#b91c1c' },
+            { id: 'blue', name: 'Синій', hex: '#3b82f6', border: '#1d4ed8' },
+            { id: 'green', name: 'Зелений', hex: '#10b981', border: '#047857' },
+            { id: 'yellow', name: 'Жовтий', hex: '#f59e0b', border: '#b45309' },
+            { id: 'purple', name: 'Фіолетовий', hex: '#8b5cf6', border: '#6d28d9' },
+            { id: 'pink', name: 'Рожевий', hex: '#ec4899', border: '#be185d' },
+            { id: 'orange', name: 'Помаранчевий', hex: '#f97316', border: '#c2410c' },
+            { id: 'cyan', name: 'Блакитний', hex: '#06b6d4', border: '#0e7490' }
+        ];
+
+        const SHAPE_ICONS = ['fa-star', 'fa-heart', 'fa-circle', 'fa-apple-whole', 'fa-gem', 'fa-sun', 'fa-cloud'];
+
+        // Init App & Background Bubbles
+        window.onload = function() {
+            createBackgroundBubbles();
+            showMenu();
+        };
+
+        function createBackgroundBubbles() {
+            const container = document.getElementById('bubblesContainer');
+            for (let i = 0; i < 15; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = Math.random() * 60 + 30;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${Math.random() * 100}%`;
+                bubble.style.animationDelay = `${Math.random() * 10}s`;
+                bubble.style.animationDuration = `${Math.random() * 8 + 8}s`;
+                container.appendChild(bubble);
+            }
+        }
+
+        function updateStars(count) {
+            totalStars += count;
+            document.getElementById('totalStars').innerText = totalStars;
+        }
+
+        function showMenu() {
+            playSound('pop');
+            currentGame = 0;
+            document.getElementById('mainMenu').classList.remove('hidden');
+            document.getElementById('game1').classList.add('hidden');
+            document.getElementById('game2').classList.add('hidden');
+            document.getElementById('game3').classList.add('hidden');
+            document.getElementById('homeBtn').classList.add('hidden');
+            document.getElementById('appTitle').innerText = 'Склад числа 8';
+        }
+
+        function startGame(gameId) {
+            playSound('pop');
+            currentGame = gameId;
+            currentStep = 0;
+
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('homeBtn').classList.remove('hidden');
+
+            document.getElementById('game1').classList.add('hidden');
+            document.getElementById('game2').classList.add('hidden');
+            document.getElementById('game3').classList.add('hidden');
+
+            if (gameId === 1) {
+                document.getElementById('appTitle').innerText = 'Група 1: Приклади';
+                document.getElementById('game1').classList.remove('hidden');
+                nextGame1Step();
+            } else if (gameId === 2) {
+                document.getElementById('appTitle').innerText = 'Група 2: Фігури';
+                document.getElementById('game2').classList.remove('hidden');
+                nextGame2Step();
+            } else if (gameId === 3) {
+                document.getElementById('appTitle').innerText = 'Група 3: Кольори';
+                document.getElementById('game3').classList.remove('hidden');
+                setGame3Mode('find');
+            }
+        }
+
+        function renderProgress(elementId) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                if (i < currentStep) {
+                    container.innerHTML += `<i class="fa-solid fa-star text-amber-400"></i>`;
+                } else {
+                    container.innerHTML += `<i class="fa-regular fa-star text-slate-300"></i>`;
+                }
+            }
+        }
+
+        // ==========================================
+        // MODULE 1: NUMERIC MATH (+ and -) FOR 8
+        // ==========================================
+        let g1CorrectAnswer = 0;
+
+        function nextGame1Step() {
+            if (currentStep >= totalSteps) {
+                triggerWinCelebration();
+                return;
+            }
+
+            renderProgress('g1Progress');
+
+            // Generate Number Bonds involving 8
+            const type = Math.floor(Math.random() * 4);
+            let eqStr = '';
+
+            if (type === 0) {
+                // X + Y = 8
+                const a = Math.floor(Math.random() * 9); // 0..8
+                const b = 8 - a;
+                eqStr = `${a} + ${b} = ?`;
+                g1CorrectAnswer = 8;
+            } else if (type === 1) {
+                // X + ? = 8
+                const a = Math.floor(Math.random() * 9);
+                const b = 8 - a;
+                eqStr = `${a} + ? = 8`;
+                g1CorrectAnswer = b;
+            } else if (type === 2) {
+                // 8 - X = ?
+                const sub = Math.floor(Math.random() * 9);
+                eqStr = `8 - ${sub} = ?`;
+                g1CorrectAnswer = 8 - sub;
+            } else {
+                // 8 - ? = Y
+                const rem = Math.floor(Math.random() * 9);
+                const sub = 8 - rem;
+                eqStr = `8 - ? = ${rem}`;
+                g1CorrectAnswer = sub;
+            }
+
+            document.getElementById('mathEquation').innerText = eqStr;
+
+            // Generate 4 large choices
+            const options = new Set();
+            options.add(g1CorrectAnswer);
+            while (options.size < 4) {
+                options.add(Math.floor(Math.random() * 9));
+            }
+
+            const optionsArr = Array.from(options).sort(() => Math.random() - 0.5);
+            const container = document.getElementById('g1Options');
+            container.innerHTML = '';
+
+            optionsArr.forEach(num => {
+                const btn = document.createElement('button');
+                btn.className = `tablet-btn bg-gradient-to-b from-indigo-50 to-indigo-100 active:from-indigo-200 active:to-indigo-300 border-4 border-indigo-300 text-indigo-800 font-extrabold text-4xl sm:text-5xl py-4 sm:py-6 rounded-3xl shadow-lg border-b-8 border-indigo-400 flex items-center justify-center`;
+                btn.innerText = num;
+                btn.onclick = () => checkGame1Answer(num, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkGame1Answer(selected, btnElement) {
+            if (selected === g1CorrectAnswer) {
+                playSound('correct');
+                btnElement.className = `tablet-btn bg-gradient-to-b from-emerald-400 to-green-500 text-white font-extrabold text-4xl sm:text-5xl py-4 sm:py-6 rounded-3xl shadow-lg border-b-8 border-green-700 flex items-center justify-center`;
+                updateStars(1);
+                currentStep++;
+                setTimeout(() => nextGame1Step(), 800);
+            } else {
+                playSound('wrong');
+                btnElement.classList.add('shake-error', 'opacity-40');
+                btnElement.disabled = true;
+            }
+        }
+
+        // ==========================================
+        // MODULE 2: SHAPE COMPOSITION TO 8
+        // ==========================================
+        let g2CurrentCount = 0;
+        let g2Needed = 0;
+
+        function nextGame2Step() {
+            if (currentStep >= totalSteps) {
+                triggerWinCelebration();
+                return;
+            }
+
+            renderProgress('g2Progress');
+
+            g2CurrentCount = Math.floor(Math.random() * 8); // 0..7
+            g2Needed = 8 - g2CurrentCount;
+
+            document.getElementById('g2CountText').innerText = g2CurrentCount;
+
+            const iconClass = SHAPE_ICONS[Math.floor(Math.random() * SHAPE_ICONS.length)];
+            const grid = document.getElementById('shapeGrid');
+            grid.innerHTML = '';
+
+            // Generate 8 tray slots
+            for (let i = 0; i < 8; i++) {
+                const slot = document.createElement('div');
+                slot.className = `w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-3 border-amber-200 bg-amber-100/50 flex items-center justify-center`;
+
+                if (i < g2CurrentCount) {
+                    slot.innerHTML = `<i class="fa-solid ${iconClass} text-amber-500 text-3xl sm:text-4xl slot-pop"></i>`;
+                } else {
+                    slot.innerHTML = `<i class="fa-solid fa-plus text-amber-200 text-xl"></i>`;
+                }
+
+                grid.appendChild(slot);
+            }
+
+            // Generate Choice Options
+            const container = document.getElementById('g2Options');
+            container.innerHTML = '';
+
+            const options = new Set();
+            options.add(g2Needed);
+            while (options.size < 3) {
+                options.add(Math.floor(Math.random() * 9));
+            }
+
+            const optionsArr = Array.from(options).sort(() => Math.random() - 0.5);
+
+            optionsArr.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = `tablet-btn bg-gradient-to-b from-orange-400 to-amber-500 text-white font-extrabold text-2xl sm:text-3xl py-3 px-6 sm:px-8 rounded-3xl shadow-lg border-b-4 border-amber-700 flex items-center gap-3`;
+                btn.innerHTML = `<span>+${opt}</span> <i class="fa-solid ${iconClass} text-amber-100 text-2xl"></i>`;
+                btn.onclick = () => checkGame2Answer(opt, btn, iconClass);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkGame2Answer(selected, btnElement, iconClass) {
+            if (selected === g2Needed) {
+                playSound('correct');
+                
+                // Fill remaining slots
+                const gridSlots = document.getElementById('shapeGrid').children;
+                for (let i = g2CurrentCount; i < 8; i++) {
+                    gridSlots[i].innerHTML = `<i class="fa-solid ${iconClass} text-emerald-500 text-3xl sm:text-4xl slot-pop"></i>`;
+                }
+                
+                document.getElementById('g2CountText').innerText = '8';
+                updateStars(1);
+                currentStep++;
+                setTimeout(() => nextGame2Step(), 1000);
+            } else {
+                playSound('wrong');
+                btnElement.classList.add('shake-error', 'opacity-40');
+                btnElement.disabled = true;
+            }
+        }
+
+        // ==========================================
+        // MODULE 3: LEARN 8 COLORS (FIND & PAINT)
+        // ==========================================
+        let g3Mode = 'find'; // 'find' or 'paint'
+        let g3TargetColor = null;
+        let g3FoundCount = 0;
+        let g3TotalTargetInGrid = 0;
+
+        function setGame3Mode(mode) {
+            playSound('pop');
+            g3Mode = mode;
+            currentStep = 0;
+
+            const btnFind = document.getElementById('modeColorFind');
+            const btnPaint = document.getElementById('modeColorPaint');
+            const containerFind = document.getElementById('g3FindContainer');
+            const containerPaint = document.getElementById('g3PaintContainer');
+
+            if (mode === 'find') {
+                btnFind.className = 'px-4 py-2 rounded-xl font-extrabold text-lg bg-teal-600 text-white shadow';
+                btnPaint.className = 'px-4 py-2 rounded-xl font-extrabold text-lg bg-teal-100 text-teal-800';
+                containerFind.classList.remove('hidden');
+                containerPaint.classList.add('hidden');
+                nextGame3FindStep();
+            } else {
+                btnPaint.className = 'px-4 py-2 rounded-xl font-extrabold text-lg bg-teal-600 text-white shadow';
+                btnFind.className = 'px-4 py-2 rounded-xl font-extrabold text-lg bg-teal-100 text-teal-800';
+                containerPaint.classList.remove('hidden');
+                containerFind.classList.add('hidden');
+                nextGame3PaintStep();
+            }
+        }
+
+        // 3A: FIND COLORS
+        function nextGame3FindStep() {
+            if (currentStep >= totalSteps) {
+                triggerWinCelebration();
+                return;
+            }
+
+            renderProgress('g3Progress');
+            document.getElementById('g3Feedback').innerText = '';
+
+            // Select random target from 8 colors
+            g3TargetColor = EIGHT_COLORS[Math.floor(Math.random() * EIGHT_COLORS.length)];
+            
+            const badge = document.getElementById('g3TargetColorBadge');
+            badge.innerText = g3TargetColor.name;
+            badge.style.backgroundColor = g3TargetColor.hex;
+
+            const grid = document.getElementById('g3ColorGrid');
+            grid.innerHTML = '';
+
+            g3FoundCount = 0;
+            const targetAmount = Math.floor(Math.random() * 3) + 2; // 2..4
+            g3TotalTargetInGrid = targetAmount;
+
+            let colorAssignments = [];
+            for (let i = 0; i < targetAmount; i++) {
+                colorAssignments.push(g3TargetColor);
+            }
+
+            while (colorAssignments.length < 8) {
+                const randCol = EIGHT_COLORS[Math.floor(Math.random() * EIGHT_COLORS.length)];
+                if (randCol.id !== g3TargetColor.id) {
+                    colorAssignments.push(randCol);
+                }
+            }
+
+            colorAssignments.sort(() => Math.random() - 0.5);
+
+            // Render 8 colored shape slots
+            colorAssignments.forEach(col => {
+                const btn = document.createElement('button');
+                btn.className = `tablet-btn w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center text-3xl sm:text-4xl text-white shadow-lg border-4 border-white/80 active:scale-90`;
+                btn.style.backgroundColor = col.hex;
+                btn.innerHTML = `<i class="fa-solid fa-shapes opacity-90"></i>`;
+                
+                btn.onclick = () => checkGame3FindClick(col, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkGame3FindClick(colObj, btn) {
+            if (btn.disabled) return;
+
+            if (colObj.id === g3TargetColor.id) {
+                playSound('correct');
+                btn.innerHTML = `<i class="fa-solid fa-check text-white text-4xl animate-bounce"></i>`;
+                btn.style.opacity = '0.6';
+                btn.disabled = true;
+                g3FoundCount++;
+
+                if (g3FoundCount === g3TotalTargetInGrid) {
+                    document.getElementById('g3Feedback').innerText = '🎉 Чудово! Всі фігурки знайдено!';
+                    updateStars(1);
+                    currentStep++;
+                    setTimeout(() => nextGame3FindStep(), 1100);
+                }
+            } else {
+                playSound('wrong');
+                btn.classList.add('shake-error');
+                setTimeout(() => btn.classList.remove('shake-error'), 400);
+            }
+        }
+
+        // 3B: PAINT STUDIO (8 COLORS)
+        let g3PaintTargetColor = null;
+
+        function nextGame3PaintStep() {
+            if (currentStep >= totalSteps) {
+                triggerWinCelebration();
+                return;
+            }
+
+            renderProgress('g3Progress');
+            document.getElementById('g3Feedback').innerText = '';
+
+            g3PaintTargetColor = EIGHT_COLORS[Math.floor(Math.random() * EIGHT_COLORS.length)];
+            const randomIcon = SHAPE_ICONS[Math.floor(Math.random() * SHAPE_ICONS.length)];
+
+            document.getElementById('paintPromptText').innerHTML = `Розфарбуй фігурку у <span style="color: ${g3PaintTargetColor.hex}" class="underline">${g3PaintTargetColor.name}</span> колір!`;
+
+            const iconElem = document.getElementById('paintShapeIcon');
+            iconElem.className = `fa-solid ${randomIcon} text-slate-300`;
+            iconElem.style.color = '';
+
+            // Render Palette with ALL 8 COLORS
+            const palette = document.getElementById('colorPalette');
+            palette.innerHTML = '';
+
+            EIGHT_COLORS.forEach(col => {
+                const swatch = document.createElement('button');
+                swatch.className = `tablet-btn w-12 h-12 sm:w-16 sm:h-16 rounded-2xl border-4 border-white shadow-md active:scale-90`;
+                swatch.style.backgroundColor = col.hex;
+                swatch.onclick = () => checkGame3PaintClick(col, iconElem);
+                palette.appendChild(swatch);
+            });
+        }
+
+        function checkGame3PaintClick(colObj, shapeElem) {
+            if (colObj.id === g3PaintTargetColor.id) {
+                playSound('correct');
+                shapeElem.style.color = colObj.hex;
+                shapeElem.classList.add('slot-pop');
+                document.getElementById('g3Feedback').innerText = `✨ Гарна робота! Це ${colObj.name} колір!`;
+                
+                updateStars(1);
+                currentStep++;
+                setTimeout(() => nextGame3PaintStep(), 1200);
+            } else {
+                playSound('wrong');
+                shapeElem.style.color = colObj.hex;
+                document.getElementById('g3Feedback').innerText = `Це ${colObj.name}. Спробуй ще знайти ${g3PaintTargetColor.name}!`;
+            }
+        }
+
+        // ==========================================
+        // CELEBRATION & CONFETTI
+        // ==========================================
+        function triggerWinCelebration() {
+            playSound('win');
+            
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 150,
+                    spread: 90,
+                    origin: { y: 0.5 }
+                });
+            }
+
+            setTimeout(() => showMenu(), 2500);
+        }
+    </script>
+</body>
+</html>
